@@ -1,0 +1,29 @@
+services:
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: bunker_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: bunker_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    container_name: bunker_web
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://root:root@postgres_db:5432/bunker_db
+    depends_on:
+      - postgres_db
+
+volumes:
+  postgres_data:
