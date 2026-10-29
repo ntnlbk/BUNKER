@@ -1,12 +1,9 @@
-from fastapi import FastAPI, Depends # type: ignore
-from fastapi.responses import JSONResponse # type: ignore
-from dataclasses import asdict  
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 app = FastAPI(title="Bunker Game API")
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def read_root():
-    return JSONResponse(
-        content={"message": "Bunker is live!"},
-        media_type="application/json; charset=utf-8"
-    )
+    with open("app/UI/index.html", "r", encoding="utf-8") as f:
+        return f.read()

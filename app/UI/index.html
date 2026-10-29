@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUNKER | Survival Lobby System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Share Tech Mono & Rajdhani -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['"Share Tech Mono"', 'monospace'],
+                        sans: ['Rajdhani', 'sans-serif'],
+                    },
+                    colors: {
+                        bunker: {
+                            50: '#fefce8',
+                            500: '#f59e0b', // Amber alert
+                            600: '#d97706',
+                            900: '#1f1911',
+                            950: '#0c0a09',
+                            danger: '#ef4444',
+                            biohazard: '#10b981',
+                        }
+                    },
+                    boxShadow: {
+                        'amber-glow': '0 0 25px -5px rgba(245, 158, 11, 0.4)',
+                        'green-glow': '0 0 25px -5px rgba(16, 185, 129, 0.4)',
+                        'terminal': '0 0 50px -10px rgba(0, 0, 0, 0.8)',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scanline': 'scanline 8s linear infinite',
+                    },
+                    keyframes: {
+                        scanline: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(1000%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Post-Apocalyptic Grid & Scanline Effects */
+        .bg-grid-pattern {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(245, 158, 11, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(245, 158, 11, 0.05) 1px, transparent 1px);
+        }
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0c0a09;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d97706;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-200 overflow-x-hidden selection:bg-amber-500 selection:text-black relative">
+
+    <!-- Ambient Grid & CRT Overlay -->
+    <div class="fixed inset-0 bg-grid-pattern pointer-events-none opacity-60"></div>
+    <div class="fixed inset-0 crt-overlay pointer-events-none z-50 opacity-40"></div>
+
+    <!-- Vignette / Atmosphere Lighting -->
+    <div class="fixed inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-950/10 via-slate-950/80 to-slate-950 pointer-events-none z-0"></div>
+
+    <!-- Main Wrapper -->
+    <div class="relative z-10 flex flex-col min-h-screen">
+
+        <!-- Header / Navigation -->
+        <header class="w-full px-6 py-4 flex justify-between items-center border-b border-amber-900/30 bg-slate-950/80 backdrop-blur-md">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-biohazard text-amber-500 text-2xl animate-pulse"></i>
+                <span class="font-mono text-xl font-bold tracking-widest text-amber-500">BUNKER</span>
+            </div>
+
+        </header>
+
+        <!-- Main Hero Section -->
+        <main class="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12 text-center">
+            
+            <!-- Warning Badge -->
+            <div class="inline-flex items-center space-x-2 px-3 py-1 mb-6 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono tracking-widest uppercase">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Cataclysm Alert</span>
+            </div>
+
+            <!-- Main Title -->
+            <h1 class="text-6xl sm:text-7xl md:text-8xl font-extrabold tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-500 to-amber-700 drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)] mb-2">
+                B U N K E R
+            </h1>
+            
+            <p class="max-w-xl text-base sm:text-lg text-slate-400 font-mono mb-10 tracking-wide">
+                An apocalypse approaches. Shelter capacity is limited. Convince the survivors that you deserve a spot inside.
+            </p>
+
+            <!-- Primary Action Buttons (2 Options) -->
+            <div class="flex flex-col sm:flex-row gap-6 w-full max-w-md">
+                
+                <!-- Option 1: Create Lobby -->
+                <button 
+                    onclick="openModal('createModal')"
+                    class="group relative flex-1 py-5 px-6 rounded-xl bg-amber-500/10 border-2 border-amber-500 text-amber-400 font-bold text-lg tracking-wider hover:bg-amber-500 hover:text-slate-950 transition-all duration-300 shadow-amber-glow flex items-center justify-center space-x-3 overflow-hidden active:scale-95">
+                    <i class="fa-solid fa-shield-cat text-xl group-hover:rotate-12 transition-transform"></i>
+                    <span>CREATE A LOBBY</span>
+                    <!-- Hover Effect Flare -->
+                    <div class="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                </button>
+
+                <!-- Option 2: Join Lobby -->
+                <button 
+                    onclick="openModal('joinModal')"
+                    class="group relative flex-1 py-5 px-6 rounded-xl bg-slate-900 border-2 border-slate-700 text-slate-200 font-bold text-lg tracking-wider hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-950/20 transition-all duration-300 hover:shadow-green-glow flex items-center justify-center space-x-3 overflow-hidden active:scale-95">
+                    <i class="fa-solid fa-[#000000] fa-key text-xl group-hover:scale-110 transition-transform"></i>
+                    <span>JOIN LOBBY</span>
+                </button>
+
+            </div>
+
+        </main>
+
+
+        <!-- Footer -->
+        <footer class="w-full py-4 text-center text-slate-600 font-mono text-xs border-t border-slate-900">
+            BUNKER SURVIVAL SIMULATOR
+        </footer>
+    </div>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- CREATE LOBBY MODAL -->
+    <div id="createModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border-2 border-amber-500/80 rounded-2xl p-6 sm:p-8 w-full max-w-lg shadow-amber-glow relative transform scale-95 transition-transform duration-300 modal-card">
+            
+            <!-- Close Button -->
+            <button onclick="closeModal('createModal')" class="absolute top-4 right-4 text-slate-400 hover:text-amber-400 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="p-3 bg-amber-500/10 rounded-lg border border-amber-500/30 text-amber-500">
+                    <i class="fa-solid fa-house-chimney-crack text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold tracking-wide text-amber-400 font-mono">INITIALIZE BUNKER</h2>
+                    <p class="text-xs text-slate-400 font-mono">Create a shelter room for survivors</p>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="createLobbyForm" onsubmit="handleCreateLobby(event)" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">Host Name / Call-Sign</label>
+                    <input 
+                        type="text" 
+                        required 
+                        placeholder="e.g. Commander Miller"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 font-mono text-sm transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">Max Capacity (Players)</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="setMaxPlayers(6)" class="player-count-btn bg-slate-950 border border-amber-500 text-amber-400 py-2 rounded-lg font-mono text-sm hover:bg-amber-500/20 active">6</button>
+                        <button type="button" onclick="setMaxPlayers(8)" class="player-count-btn bg-slate-950 border border-slate-800 text-slate-400 py-2 rounded-lg font-mono text-sm hover:border-amber-500">8</button>
+                        <button type="button" onclick="setMaxPlayers(10)" class="player-count-btn bg-slate-950 border border-slate-800 text-slate-400 py-2 rounded-lg font-mono text-sm hover:border-amber-500">10</button>
+                        <button type="button" onclick="setMaxPlayers(12)" class="player-count-btn bg-slate-950 border border-slate-800 text-slate-400 py-2 rounded-lg font-mono text-sm hover:border-amber-500">12</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">Generated Room Code</label>
+                    <div class="flex gap-2">
+                        <input 
+                            type="text" 
+                            id="generatedCode" 
+                            readonly 
+                            value="BNK-8921" 
+                            class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-amber-400 font-mono font-bold tracking-widest text-center text-lg focus:outline-none">
+                        <button 
+                            type="button" 
+                            onclick="generateRandomCode()" 
+                            class="px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-mono text-xs transition-colors">
+                            <i class="fa-solid fa-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button 
+                        type="submit" 
+                        class="w-full py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-lg tracking-wider font-mono text-base shadow-amber-glow transition-colors flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-lock-open"></i>
+                        <span>LAUNCH BUNKER LOBBY</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- JOIN LOBBY MODAL -->
+    <div id="joinModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border-2 border-emerald-500/80 rounded-2xl p-6 sm:p-8 w-full max-w-lg shadow-green-glow relative transform scale-95 transition-transform duration-300 modal-card">
+            
+            <!-- Close Button -->
+            <button onclick="closeModal('joinModal')" class="absolute top-4 right-4 text-slate-400 hover:text-emerald-400 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30 text-emerald-400">
+                    <i class="fa-solid fa-right-to-bracket text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold tracking-wide text-emerald-400 font-mono">ENTER ROOM CODE</h2>
+                    <p class="text-xs text-slate-400 font-mono">Request clearance for existing bunker</p>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="joinLobbyForm" onsubmit="handleJoinLobby(event)" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">Survivor Name</label>
+                    <input 
+                        type="text" 
+                        required 
+                        placeholder="e.g. Dr. Aris"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono text-sm transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">Access Room Code</label>
+                    <input 
+                        type="text" 
+                        required 
+                        placeholder="BNK-XXXX"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-emerald-400 font-mono font-bold tracking-widest text-center text-lg uppercase focus:outline-none focus:border-emerald-500 transition-colors">
+                </div>
+
+                <div class="pt-2">
+                    <button 
+                        type="submit" 
+                        class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-lg tracking-wider font-mono text-base shadow-green-glow transition-colors flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-door-open"></i>
+                        <span>REQUEST ENTRY</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 flex items-center space-x-3 bg-slate-900 border border-amber-500 text-amber-300 px-5 py-3 rounded-xl shadow-2xl opacity-0 translate-y-10 transition-all pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-lg"></i>
+        <span id="toastMsg" class="font-mono text-sm font-semibold">Message here</span>
+    </div>
+
+    <!-- JavaScript Interactions -->
+    <script>
+        const FASTAPI_URL = "http://localhost:8000";
+
+        // Check backend live status mock
+        async function checkBackendStatus() {
+            const statusDot = document.getElementById('apiStatusDot');
+            const statusText = document.getElementById('apiStatusText');
+
+            try {
+                const response = await fetch(`${FASTAPI_URL}/`, { method: 'GET' });
+                if (response.ok) {
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                    statusText.className = "text-emerald-400";
+                    statusText.innerText = "ONLINE";
+                } else {
+                    throw new Error("API returned status error");
+                }
+            } catch (err) {
+                // Fallen back status display for demo/offline backend
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500";
+                statusText.className = "text-red-400";
+                statusText.innerText = "DISCONNECTED";
+            }
+        }
+
+        // Run API ping check
+        checkBackendStatus();
+
+        // Modal Helpers
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            const card = modal.querySelector('.modal-card');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+            if(id === 'createModal') generateRandomCode();
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            const card = modal.querySelector('.modal-card');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+        }
+
+        // Generate Random Room Code
+        function generateRandomCode() {
+            const num = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('generatedCode').value = `BNK-${num}`;
+        }
+
+        // Select Max Players Option
+        function setMaxPlayers(count) {
+            const buttons = document.querySelectorAll('.player-count-btn');
+            buttons.forEach(btn => {
+                if (parseInt(btn.innerText) === count) {
+                    btn.classList.add('border-amber-500', 'text-amber-400', 'bg-amber-500/20');
+                    btn.classList.remove('border-slate-800', 'text-slate-400');
+                } else {
+                    btn.classList.remove('border-amber-500', 'text-amber-400', 'bg-amber-500/20');
+                    btn.classList.add('border-slate-800', 'text-slate-400');
+                }
+            });
+        }
+
+        // Form Submit Handlers
+        function handleCreateLobby(e) {
+            e.preventDefault();
+            const code = document.getElementById('generatedCode').value;
+            closeModal('createModal');
+            showToast(`Lobby ${code} created successfully! Waiting for survivors...`, 'fa-circle-check');
+        }
+
+        function handleJoinLobby(e) {
+            e.preventDefault();
+            closeModal('joinModal');
+            showToast(`Joining Bunker... Access granted!`, 'fa-door-open');
+        }
+
+        // Toast Notification Function
+        function showToast(message, iconClass = 'fa-circle-info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            toastIcon.className = `fa-solid ${iconClass} text-lg`;
+
+            toast.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+            }, 3500);
+        }
+
+        // Toggle Dev Integration Guide
+        function toggleGuide() {
+            const guide = document.getElementById('guideSection');
+            guide.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
