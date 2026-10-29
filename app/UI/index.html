@@ -173,22 +173,12 @@
             <!-- Form -->
             <form id="createLobbyForm" onsubmit="handleCreateLobby(event)" class="space-y-5">
                 <div>
-                    <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">Host Name / Call-Sign</label>
+                    <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">Host Name</label>
                     <input 
                         type="text" 
                         required 
                         placeholder="e.g. Commander Miller"
                         class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 font-mono text-sm transition-colors">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">Max Capacity (Players)</label>
-                    <div class="grid grid-cols-4 gap-2">
-                        <button type="button" onclick="setMaxPlayers(6)" class="player-count-btn bg-slate-950 border border-amber-500 text-amber-400 py-2 rounded-lg font-mono text-sm hover:bg-amber-500/20 active">6</button>
-                        <button type="button" onclick="setMaxPlayers(8)" class="player-count-btn bg-slate-950 border border-slate-800 text-slate-400 py-2 rounded-lg font-mono text-sm hover:border-amber-500">8</button>
-                        <button type="button" onclick="setMaxPlayers(10)" class="player-count-btn bg-slate-950 border border-slate-800 text-slate-400 py-2 rounded-lg font-mono text-sm hover:border-amber-500">10</button>
-                        <button type="button" onclick="setMaxPlayers(12)" class="player-count-btn bg-slate-950 border border-slate-800 text-slate-400 py-2 rounded-lg font-mono text-sm hover:border-amber-500">12</button>
-                    </div>
                 </div>
 
                 <div>
@@ -334,32 +324,85 @@
             document.getElementById('generatedCode').value = `BNK-${num}`;
         }
 
-        // Select Max Players Option
-        function setMaxPlayers(count) {
-            const buttons = document.querySelectorAll('.player-count-btn');
-            buttons.forEach(btn => {
-                if (parseInt(btn.innerText) === count) {
-                    btn.classList.add('border-amber-500', 'text-amber-400', 'bg-amber-500/20');
-                    btn.classList.remove('border-slate-800', 'text-slate-400');
-                } else {
-                    btn.classList.remove('border-amber-500', 'text-amber-400', 'bg-amber-500/20');
-                    btn.classList.add('border-slate-800', 'text-slate-400');
-                }
-            });
-        }
-
         // Form Submit Handlers
-        function handleCreateLobby(e) {
+        async function handleCreateLobby(e) {
             e.preventDefault();
-            const code = document.getElementById('generatedCode').value;
-            closeModal('createModal');
-            showToast(`Lobby ${code} created successfully! Waiting for survivors...`, 'fa-circle-check');
+
+            const hostName = e.target.querySelector('input[placeholder*="Commander"]').value.trim();
+            const roomCode = document.getElementById('generatedCode').value.trim();
+
+            try {
+                const response = await fetch('/api/lobbies/create', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ host_name: hostName, room_code: roomCode })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.status === "error") {
+                    throw new Error(data.message || "Failed to create lobby");
+                }
+
+                // Save data to session storage so lobby.html knows who's here
+                sessionStorage.setItem("roomCode", data.room_code);
+                sessionStorage.setItem("playerName", data.host_name);
+
+                showToast(`Lobby ${data.room_code} created! Entering bunker...`, 'fa-circle-check');
+
+                // Redirect happens here on the client side!
+                setTimeout(() => {
+                    window.location.href = `lobby?code=${encodeURIComponent(data.room_code)}&player=${encodeURIComponent(data.host_name)}`;
+                }, 800);
+
+            } catch (err) {
+                showToast(err.message, 'fa-triangle-exclamation');
+            }
         }
 
-        function handleJoinLobby(e) {
+        async function handleJoinLobby(e) {
             e.preventDefault();
-            closeModal('joinModal');
-            showToast(`Joining Bunker... Access granted!`, 'fa-door-open');
+
+            // 1. Extract input values from the Join modal form
+            const survivorInput = e.target.querySelector('input[placeholder*="Dr."]');
+            const codeInput = e.target.querySelector('input[placeholder*="BNK"]');
+
+            const survivorName = survivorInput.value.trim();
+            const roomName = codeInput.value.trim().toUpperCase();
+
+            try {
+                // 2. Call your FastAPI backend join endpoint with room_name
+                const response = await fetch('/api/lobbies/join', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        room_name: roomName,
+                        nickname: survivorName
+                    })
+                });
+
+                const data = await response.json();
+
+                // 3. Handle failure (e.g. nickname taken, lobby not found, game started)
+                if (!response.ok || data.status === "error") {
+                    throw new Error(data.message || "Failed to join lobby");
+                }
+
+                // 4. Save session info so lobby.html can highlight the user correctly
+                sessionStorage.setItem("roomCode", roomName);
+                sessionStorage.setItem("playerName", survivorName);
+
+                showToast(`Access granted! Entering bunker...`, 'fa-door-open');
+
+                // 5. Smooth redirect to lobby page
+                setTimeout(() => {
+                    window.location.href = `lobby?code=${encodeURIComponent(roomName)}&player=${encodeURIComponent(survivorName)}`;
+                }, 800);
+
+            } catch (err) {
+                // Displays errors like "This nickname is already taken in this lobby." via toast
+                showToast(err.message, 'fa-triangle-exclamation');
+            }
         }
 
         // Toast Notification Function
@@ -377,12 +420,7 @@
                 toast.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
             }, 3500);
         }
-
-        // Toggle Dev Integration Guide
-        function toggleGuide() {
-            const guide = document.getElementById('guideSection');
-            guide.classList.toggle('hidden');
-        }
+        
     </script>
 </body>
 </html>
