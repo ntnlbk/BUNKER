@@ -54,13 +54,14 @@ def serve_lobby():
 class JoinLobbyRequest(BaseModel):
     room_name: str
     nickname: str
+    role: str
 
 @app.post("/api/lobbies/join")
 def join_lobby_endpoint(payload: JoinLobbyRequest):
     print(f"Received request to join lobby '{payload.room_name}' as {payload.nickname}")
     
     # Call your corrected backend service function
-    result = lobby_services.join_lobby(payload.room_name, payload.nickname)
+    result = lobby_services.join_lobby(payload.room_name, payload.nickname, payload.role)
     
     if not result["success"]:
         return JSONResponse(

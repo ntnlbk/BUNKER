@@ -252,12 +252,21 @@
                         class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-emerald-400 font-mono font-bold tracking-widest text-center text-lg uppercase focus:outline-none focus:border-emerald-500 transition-colors">
                 </div>
 
-                <div class="pt-2">
+                <div class="pt-2 flex flex-col sm:flex-row gap-3">
                     <button 
-                        type="submit" 
-                        class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-lg tracking-wider font-mono text-base shadow-green-glow transition-colors flex items-center justify-center space-x-2">
+                        type="button" 
+                        onclick="handleJoinLobby('player')" 
+                        class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-lg tracking-wider font-mono text-sm shadow-green-glow transition-colors flex items-center justify-center space-x-2">
                         <i class="fa-solid fa-door-open"></i>
                         <span>REQUEST ENTRY</span>
+                    </button>
+
+                    <button 
+                        type="button" 
+                        onclick="handleJoinLobby('spectator')" 
+                        class="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-extrabold rounded-lg tracking-wider font-mono text-sm border border-slate-700 transition-colors flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-eye"></i>
+                        <span>JOIN AS SPECTATOR</span>
                     </button>
                 </div>
             </form>
@@ -360,47 +369,51 @@
             }
         }
 
-        async function handleJoinLobby(e) {
-            e.preventDefault();
+        async function handleJoinLobby(role = "player") {
+            // 1. Grab inputs directly using form queries or input placeholders
+            const joinModal = document.getElementById('joinModal');
+            const survivorInput = joinModal.querySelector('input[placeholder*="Dr."]');
+            const codeInput = joinModal.querySelector('input[placeholder*="BNK"]');
 
-            // 1. Extract input values from the Join modal form
-            const survivorInput = e.target.querySelector('input[placeholder*="Dr."]');
-            const codeInput = e.target.querySelector('input[placeholder*="BNK"]');
+            const survivorName = survivorInput ? survivorInput.value.trim() : "";
+            const roomName = codeInput ? codeInput.value.trim().toUpperCase() : "";
 
-            const survivorName = survivorInput.value.trim();
-            const roomName = codeInput.value.trim().toUpperCase();
+            // 2. Validate inputs before fetching
+            if (!survivorName || !roomName) {
+                showToast("Please enter both your name and room code.", 'fa-triangle-exclamation');
+                return;
+            }
 
             try {
-                // 2. Call your FastAPI backend join endpoint with room_name
+                // 3. Call your FastAPI backend join endpoint
                 const response = await fetch('/api/lobbies/join', {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         room_name: roomName,
-                        nickname: survivorName
+                        nickname: survivorName,
+                        role: role.toUpperCase()
                     })
                 });
 
                 const data = await response.json();
 
-                // 3. Handle failure (e.g. nickname taken, lobby not found, game started)
                 if (!response.ok || data.status === "error") {
                     throw new Error(data.message || "Failed to join lobby");
                 }
 
-                // 4. Save session info so lobby.html can highlight the user correctly
+                // 4. Save session info
                 sessionStorage.setItem("roomCode", roomName);
                 sessionStorage.setItem("playerName", survivorName);
 
-                showToast(`Access granted! Entering bunker...`, 'fa-door-open');
+                showToast(`Access granted as ${role}! Entering bunker...`, 'fa-door-open');
 
-                // 5. Smooth redirect to lobby page
+                // 5. Smooth redirect
                 setTimeout(() => {
                     window.location.href = `lobby?code=${encodeURIComponent(roomName)}&player=${encodeURIComponent(survivorName)}`;
                 }, 800);
 
             } catch (err) {
-                // Displays errors like "This nickname is already taken in this lobby." via toast
                 showToast(err.message, 'fa-triangle-exclamation');
             }
         }

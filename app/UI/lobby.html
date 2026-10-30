@@ -29,56 +29,82 @@
             </ul>
         </div>
 
+        <!-- Start Game Button (Visible only to Game Master) -->
+        <div id="gmControls" class="mt-4 hidden">
+            <button onclick="startGame()" class="w-full py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-lg tracking-wider font-mono text-base shadow-amber-glow transition-colors flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-play"></i>
+                <span>START GAME</span>
+            </button>
+        </div>
+
         <button onclick="window.location.href='/'" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs rounded-lg transition-colors">
             LEAVE BUNKER
         </button>
     </div>
 
     <script>
-    // 1. Get room details / player info from URL or session storage
-    const params = new URLSearchParams(window.location.search);
-    const roomCode = params.get('code') || sessionStorage.getItem('roomCode');
-    const currentUsername = params.get('player') || sessionStorage.getItem('playerName');
+        // 1. Get room details / player info from URL or session storage
+        const params = new URLSearchParams(window.location.search);
+        const roomCode = params.get('code') || sessionStorage.getItem('roomCode');
+        const currentUsername = params.get('player') || sessionStorage.getItem('playerName');
 
-    document.getElementById('displayRoomCode').innerText = roomCode || "UNKNOWN";
+        document.getElementById('displayRoomCode').innerText = roomCode || "UNKNOWN";
 
-    async function fetchLobbyPlayers() {
-        if (!roomCode) return;
+        async function fetchLobbyPlayers() {
+            if (!roomCode) return;
 
-        try {
-            // Adjust the URL if your backend route expects lobby_id instead of room code
-            const res = await fetch(`/api/lobbies/${roomCode}/players`);
-            
-            if (!res.ok) throw new Error("Failed to load players");
-
-            const data = await res.json();
-            const playerList = document.getElementById('playerList');
-
-            // 2. Render players and check if it's "me"
-            playerList.innerHTML = data.players.map(p => {
-                const isMe = p.nickname === currentUsername;
+            try {
+                const res = await fetch(`/api/lobbies/${roomCode}/players`);
                 
-                return `
-                    <li class="bg-slate-950 px-4 py-3 rounded-lg border ${isMe ? 'border-amber-500 shadow-amber-glow bg-amber-500/5' : 'border-slate-800'} flex justify-between items-center transition-all">
-                        <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-user text-xs ${isMe ? 'text-amber-400' : 'text-slate-500'}"></i>
-                            <span class="${isMe ? 'font-bold text-amber-300' : 'text-slate-300'}">
-                                ${p.nickname} ${isMe ? '<span class="text-xs text-amber-500 ml-1 font-mono">(YOU)</span>' : ''}
-                            </span>
-                        </div>
-                        <span class="text-xs font-mono text-slate-500">${p.status || 'READY'}</span>
-                    </li>
-                `;
-            }).join('');
+                if (!res.ok) throw new Error("Failed to load players");
 
-        } catch (err) {
-            console.error("Error fetching lobby players:", err);
+                const data = await res.json();
+                const playerList = document.getElementById('playerList');
+                const gmControls = document.getElementById('gmControls');
+
+                let myCurrentRole = 'player'; // Track the role of the logged-in user
+
+                // 2. Render players and check if it's "me"
+                playerList.innerHTML = data.players.map(p => {
+                    const isMe = p.nickname === currentUsername;
+                    const role = (p.role || 'player').toLowerCase(); // normalize role case
+                    
+                    if (isMe) {
+                        myCurrentRole = role; // Capture current user's role
+                    }
+                    
+                    return `
+                        <li class="bg-slate-950 px-4 py-3 rounded-lg border ${isMe ? 'border-amber-500 shadow-amber-glow bg-amber-500/5' : 'border-slate-800'} flex justify-between items-center transition-all">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-user text-xs ${isMe ? 'text-amber-400' : 'text-slate-500'}"></i>
+                                <span class="${isMe ? 'font-bold text-amber-300' : 'text-slate-300'}">
+                                    ${p.nickname} <span class="text-xs text-slate-400">(${role})</span> ${isMe ? '<span class="text-xs text-amber-500 ml-1 font-mono">(YOU)</span>' : ''}
+                                </span>
+                            </div>
+                            <span class="text-xs font-mono text-slate-500">${p.status || 'READY'}</span>
+                        </li>
+                    `;
+                }).join('');
+
+                // 3. Toggle Start Game button visibility based on the user's role
+                if (myCurrentRole === 'game_master') {
+                    gmControls.classList.remove('hidden');
+                } else {
+                    gmControls.classList.add('hidden');
+                }
+
+            } catch (err) {
+                console.error("Error fetching lobby players:", err);
+            }
         }
-    }
 
-    // Initial fetch and poll every 3 seconds to auto-update when new players join
-    fetchLobbyPlayers();
-    setInterval(fetchLobbyPlayers, 3000);
+        function startGame() {
+            alert("Initiating Bunker Simulation...");
+        }
+
+        // Initial fetch and poll every 3 seconds
+        fetchLobbyPlayers();
+        setInterval(fetchLobbyPlayers, 3000);
 </script>
 </body>
 </html>
