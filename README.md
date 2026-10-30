@@ -11,6 +11,11 @@ docker compose down -v
 docker compose up -d
 ```
 
+- Clear cache
+```
+docker compose build --no-cache
+```
+
 ## PostgreSQL 
 
 - Seed tables with data from scripts/data folder:

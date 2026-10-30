@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUNKER | Survivor Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Rajdhani', sans-serif; }
+        .font-mono { font-family: 'Share Tech Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0c0a09; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 3px; }
+    </style>
+</head>
+<body class="h-full flex flex-col bg-slate-950 text-slate-200 overflow-hidden">
+
+    <!-- Header -->
+    <header class="w-full px-6 py-4 flex justify-between items-center border-b border-emerald-900/30 bg-slate-950/85">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-user-shield text-emerald-500 text-2xl animate-pulse"></i>
+            <span class="font-mono text-xl font-bold tracking-widest text-emerald-400">BUNKER // SURVIVOR DOSSIER</span>
+        </div>
+        <div class="font-mono text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded border border-emerald-500/30">
+            ROOM: <span id="headerRoomCode">---</span> | SURVIVOR: <span id="headerPlayerName">---</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 overflow-hidden">
+        
+        <!-- Left 2 Cols: Survivor Attributes & Traits -->
+        <div class="md:col-span-2 bg-slate-900 border-2 border-emerald-500/60 rounded-2xl p-6 flex flex-col overflow-y-auto shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+            <h2 class="text-2xl font-bold text-emerald-400 font-mono mb-2"><i class="fa-solid fa-id-card mr-2"></i>PERSONAL PROFILE</h2>
+            <p class="text-xs text-slate-400 font-mono mb-6">Defend your utility to the community. Reveal your traits strategically.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 font-mono">
+                <div class="bg-slate-950 p-4 rounded-xl border border-emerald-500/30 text-center">
+                    <span class="text-xs text-slate-400 block uppercase">Profession</span>
+                    <span class="text-sm font-bold text-emerald-300">Cardiologist</span>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-xl border border-emerald-500/30 text-center">
+                    <span class="text-xs text-slate-400 block uppercase">Health</span>
+                    <span class="text-sm font-bold text-emerald-300">Stable (O+)</span>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-xl border border-emerald-500/30 text-center">
+                    <span class="text-xs text-slate-400 block uppercase">Hobby</span>
+                    <span class="text-sm font-bold text-emerald-300">Apiculture</span>
+                </div>
+            </div>
+
+            <div class="p-5 bg-slate-950 border border-slate-800 rounded-xl space-y-3 font-mono">
+                <h3 class="text-sm font-bold text-emerald-400 uppercase">Hidden Trait Slot #1</h3>
+                <p class="text-xs text-slate-400">This attribute is currently locked until authorized by the Game Master.</p>
+                <button class="px-4 py-2 bg-emerald-500/10 border border-emerald-500 text-emerald-400 text-xs rounded hover:bg-emerald-500 hover:text-slate-950 transition-colors">Request Trait Reveal</button>
+            </div>
+        </div>
+
+        <!-- Right Col: WebSocket Chat -->
+        <div class="bg-slate-900 border-2 border-slate-700 rounded-2xl p-4 flex flex-col h-full overflow-hidden">
+            <h3 class="text-sm font-mono text-emerald-400 uppercase tracking-wider mb-2 border-b border-slate-800 pb-2">
+                <i class="fa-solid fa-comments mr-2"></i>Shelter Deliberation Channel
+            </h3>
+            <div id="chatBox" class="flex-1 overflow-y-auto font-mono text-xs space-y-2 p-3 bg-slate-950 rounded border border-slate-800 mb-3"></div>
+            <form onsubmit="sendChatMessage(event)" class="flex gap-2">
+                <input type="text" id="chatInput" placeholder="Plead your case..." required class="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500">
+                <button type="submit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 rounded font-mono text-xs font-bold transition-colors">SEND</button>
+            </form>
+        </div>
+
+    </main>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const roomCode = params.get('code') || sessionStorage.getItem('roomCode') || 'BNK-0000';
+        const currentUsername = params.get('player') || sessionStorage.getItem('playerName') || 'Survivor';
+        
+        document.getElementById('headerRoomCode').innerText = roomCode;
+        document.getElementById('headerPlayerName').innerText = currentUsername;
+
+        let ws;
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws/${roomCode}/${encodeURIComponent(currentUsername)}`);
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === "CHAT") {
+                    appendChatMessage(data.sender, data.message);
+                }
+            };
+            ws.onclose = () => setTimeout(initWebSocket, 2000);
+        }
+
+        function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            if (ws && input.value.trim()) {
+                ws.send(JSON.stringify({ type: "CHAT", message: input.value.trim() }));
+                input.value = "";
+            }
+        }
+
+        function appendChatMessage(sender, message) {
+            const chatBox = document.getElementById('chatBox');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = "p-1 rounded text-slate-300";
+            msgDiv.innerHTML = `<span class="font-bold text-emerald-400">${sender}:</span> ${message}`;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        initWebSocket();
+    </script>
+</body>
+</html>
